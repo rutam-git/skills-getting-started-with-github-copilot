@@ -1,4 +1,5 @@
 import copy
+import copy
 import pytest
 from fastapi.testclient import TestClient
 
@@ -7,21 +8,20 @@ from src.app import app, activities
 
 client = TestClient(app)
 
-# keep a pristine copy for resetting between tests
-def _initial_activities():
-    return copy.deepcopy(activities)
+# capture the original activities once at import time so tests can restore it
+ORIGINAL_ACTIVITIES = copy.deepcopy(activities)
 
 @pytest.fixture(autouse=True)
 def reset_activities():
     # clear and restore the global activities dict before each test
     activities.clear()
-    activities.update(_initial_activities())
+    activities.update(copy.deepcopy(ORIGINAL_ACTIVITIES))
     yield
 
 
 def test_root_redirect():
-    response = client.get("/", allow_redirects=False)
-    assert response.status_code == 307 or response.status_code == 302
+    response = client.get("/", follow_redirects=False)
+    assert response.status_code in (307, 302)
     assert response.headers["location"].endswith("/static/index.html")
 
 
